@@ -40,6 +40,7 @@ steps:
       testResultsFiles: 'test-results/TEST-*.xml'
       mergeTestResults: true
       failTaskOnFailedTests: true
+      testRunTitle: 'Test results for build id $(Build.BuildId)'
     displayName: 'Publish unit tests'
   
   - task: PublishCodeCoverageResults@1
