@@ -7,7 +7,9 @@ trigger:
 - master
 
 variables:
-  group: databricks-deployment
+- group: databricks-deployment
+- name: python-version
+  value: '3.7'
 
 stages:
 - stage: Build
@@ -20,7 +22,7 @@ stages:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.7'
+          versionSpec: $(python-version)
           addToPath: true
           architecture: 'x64'
         displayName: 'Set up Python 3'
@@ -92,13 +94,19 @@ stages:
       vmImage: 'ubuntu-latest'
 
     steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: $(python-version)
+          addToPath: true
+          architecture: 'x64'
+        displayName: 'Set up Python 3'
+      
       - task: PowerShell@2
         inputs:
           targetType: 'inline'
           pwsh: true
           script: |
+            Write-Host "##vso[task.setvariable variable=DATABRICKS_HOST]$(test-databricks_host)"
+            Write-Host "##vso[task.setvariable variable=DATABRICKS_TOKEN]$(test-databricks_pat)"
             python3 -m pip install databricks-cli
             databricks fs ls dbfs:/FileStore
-        env:
-          DATABRICKS_HOST: $(test-databricks-host)
-          DATABRICKS_TOKEN: $(test-databricks-pat)
