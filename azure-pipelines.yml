@@ -6,8 +6,8 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
+variables:
+  group: databricks-deployment
 
 stages:
 - stage: Build
@@ -83,3 +83,22 @@ stages:
           ArtifactName: 'drop'
           publishLocation: 'Container'
         displayName: 'Publish build artifacts'
+
+- stage: Deploy
+  jobs:
+  - job: test
+    displayName: 'Deplpoy library to test'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          pwsh: true
+          script: |
+            python3 -m pip install databricks-cli
+            databricks fs ls dbfs:/FileStore
+        env:
+          DATABRICKS_HOST: $(test-databricks-host)
+          DATABRICKS_TOKEN: $(test-databricks-pat)
