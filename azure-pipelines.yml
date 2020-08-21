@@ -49,3 +49,11 @@ steps:
       summaryFileLocation: 'coverage.xml'
       reportDirectory: 'htmlcov'
     displayName: 'Publish code coverage results'
+
+  - task: Bash@3
+    inputs:
+      targetType: inline
+      script: |
+        python -m pip install setuptools wheel
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    displayName: 'Build the egg if this is executing on the master branch'
