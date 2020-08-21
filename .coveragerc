@@ -1,0 +1,14 @@
+# Coverage configuration to control coverage.py
+
+[run]
+branch = True
+omit =
+    # omit everything in the virtual environment
+    ./.venv/*
+    # omit the visual studio code directory
+    ./.vscode/*
+    # omit the unit tests from the coverage
+    ./tests/*
+
+[html]
+title = Demo Spark library coverage report

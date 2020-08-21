@@ -1,0 +1,9 @@
+pyspark==3.0.0
+pandas==1.1.0
+pyarrow==1.0.0
+
+flake8
+pep8-naming
+rope
+coverage
+unittest-xml-reporting
