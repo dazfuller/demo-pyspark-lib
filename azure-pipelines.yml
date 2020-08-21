@@ -79,6 +79,11 @@ stages:
         # condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
         displayName: 'Copy wheel to artifacts staging'
       
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'dist'
+          artifactName: LibWheel
+      
       - task: PublishBuildArtifacts@1
         inputs:
           PathtoPublish: '$(Build.ArtifactStagingDirectory)'
@@ -87,6 +92,8 @@ stages:
         displayName: 'Publish build artifacts'
 
 - stage: Deploy
+  dependsOn: Build
+  condition: succeeded()
   jobs:
   - job: test
     displayName: 'Deplpoy library to test'
@@ -94,6 +101,12 @@ stages:
       vmImage: 'ubuntu-latest'
 
     steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifactName: LibWheel
+          patterns: '**/*.whl'
+          path: $(Build.SourcesDirectory)/dist
+      
       - task: UsePythonVersion@0
         inputs:
           versionSpec: $(python-version)
