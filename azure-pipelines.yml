@@ -106,7 +106,8 @@ stages:
           targetType: 'inline'
           pwsh: true
           script: |
-            Write-Host "##vso[task.setvariable variable=DATABRICKS_HOST]$(test-databricks_host)"
-            Write-Host "##vso[task.setvariable variable=DATABRICKS_TOKEN]$(test-databricks_pat)"
             python3 -m pip install databricks-cli
             databricks fs ls dbfs:/FileStore
+        env:
+          DATABRICKS_HOST: $(test-databricks-host)
+          DATABRICKS_TOKEN: $(test-databricks-pat)
