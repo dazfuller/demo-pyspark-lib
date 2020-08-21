@@ -83,6 +83,7 @@ stages:
         inputs:
           targetPath: 'dist'
           artifactName: LibWheel
+        displayName: 'Publish artifact to pipeline'
       
       - task: PublishBuildArtifacts@1
         inputs:
@@ -106,6 +107,7 @@ stages:
           artifactName: LibWheel
           patterns: '**/*.whl'
           path: $(Build.SourcesDirectory)/dist
+        displayName: 'Download artifact from pipeline'
       
       - task: UsePythonVersion@0
         inputs:
@@ -120,7 +122,17 @@ stages:
           pwsh: true
           script: |
             python3 -m pip install databricks-cli
-            databricks fs ls dbfs:/FileStore
+        displayName: 'Install Databricks CLI'
+      
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          pwsh: true
+          script: |
+            $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
+            databricks fs mkdirs dbfs:/FileStore/libraries
+            databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
         env:
           DATABRICKS_HOST: $(test-databricks-host)
           DATABRICKS_TOKEN: $(test-databricks-pat)
+        displayName: 'Publish wheel file to test workspace'
