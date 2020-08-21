@@ -7,3 +7,5 @@ pep8-naming
 rope
 coverage
 unittest-xml-reporting
+setuptools
+wheel
