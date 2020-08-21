@@ -15,6 +15,7 @@ steps:
       versionSpec: '3.7'
       addToPath: true
       architecture: 'x64'
+    displayName: 'Set up Python 3'
 
   - task: Bash@3
     inputs:
@@ -22,6 +23,7 @@ steps:
       script: |
         python3 -m pip install --upgrade pip
         python3 -m pip install -r requirements.txt
+    displayName: 'Install dependencies'
   
   - task: Bash@3
     inputs:
@@ -30,3 +32,19 @@ steps:
         python3 -m coverage run -m xmlrunner -o test-results discover -v -s ./tests -p test_*.py
         python3 -m coverage xml
         python3 -m coverage html
+    displayName: 'Run tests and produce code coverage'
+  
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'test-results/TEST-*.xml'
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+    displayName: 'Publish unit tests'
+  
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: 'Cobertura'
+      summaryFileLocation: 'coverage.xml'
+      reportDirectory: 'htmlcov'
+    displayName: 'Publish code coverage results'
