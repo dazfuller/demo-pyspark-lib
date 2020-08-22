@@ -167,4 +167,4 @@ stages:
         env:
           DATABRICKS_HOST: $(test-databricks-host)
           DATABRICKS_TOKEN: $(test-databricks-pat)
-        displayName: 'Publish wheel file to test workspace'
+        displayName: 'Publish wheel file to production workspace'
