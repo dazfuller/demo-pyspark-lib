@@ -163,7 +163,7 @@ stages:
           script: |
             $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
             databricks fs mkdirs dbfs:/FileStore/libraries
-            databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries/dazspark-py3.whl
+            databricks fs cp --overwrite $WheelFile.FullName dbfs:/FileStore/libraries/dazspark-py3.whl
         env:
           DATABRICKS_HOST: $(test-databricks-host)
           DATABRICKS_TOKEN: $(test-databricks-pat)
