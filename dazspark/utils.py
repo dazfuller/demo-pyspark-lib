@@ -1,5 +1,8 @@
 import re
+from functools import reduce
 from typing import Optional
+
+from pyspark.sql import DataFrame
 
 
 def replace_invalid_chars(col_name: str, replace_char: Optional[str] = "_") -> str:
@@ -14,7 +17,7 @@ def replace_invalid_chars(col_name: str, replace_char: Optional[str] = "_") -> s
     Returns:
         str: [description]
     """
-    return re.sub("[ ,;{}()\n\t=\\/.]", "_", col_name)
+    return re.sub("_+", replace_char, re.sub("[ ,;{}()\n\t=\\/.]", replace_char, col_name))
 
 
 def standardise_name(col_name: str) -> str:
@@ -30,3 +33,15 @@ def standardise_name(col_name: str) -> str:
         str: A standardised column name
     """
     return re.sub("_+", "_", "_".join([part.capitalize() for part in re.split("[ _]", replace_invalid_chars(col_name))]).strip("_"))
+
+
+def standardise_data_frame(df: DataFrame) -> DataFrame:
+    """Standardises the column names of a Spark DataFrame
+
+    Args:
+        df (DataFrame): The DataFrame to standardise the column names of
+
+    Returns:
+        DataFrame: DataFrame with columns renamed and standardised
+    """
+    return reduce(lambda acc, col: acc.withColumnRenamed(col, standardise_name(col)), df.columns, df)
