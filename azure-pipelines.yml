@@ -84,47 +84,47 @@ stages:
   jobs:
   - deployment: Deployment
     displayName: 'Deploy library to test'
+    environment: 'Test-Databricks'
     pool:
       vmImage: 'ubuntu-latest'
-
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-              - task: DownloadPipelineArtifact@2
-                inputs:
-                  artifactName: LibWheel
-                  patterns: '**/*.whl'
-                  path: $(Build.SourcesDirectory)/dist
-                displayName: 'Download artifact from pipeline'
-              
-              - task: UsePythonVersion@0
-                inputs:
-                  versionSpec: $(python-version)
-                  addToPath: true
-                  architecture: 'x64'
-                displayName: 'Set up Python 3'
-              
-              - task: PowerShell@2
-                inputs:
-                  targetType: 'inline'
-                  pwsh: true
-                  script: |
-                    python3 -m pip install databricks-cli
-                displayName: 'Install Databricks CLI'
-              
-              - task: PowerShell@2
-                inputs:
-                  targetType: 'inline'
-                  pwsh: true
-                  script: |
-                    $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
-                    databricks fs mkdirs dbfs:/FileStore/libraries
-                    databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
-                env:
-                  DATABRICKS_HOST: $(test-databricks-host)
-                  DATABRICKS_TOKEN: $(test-databricks-pat)
-                displayName: 'Publish wheel file to test workspace'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifactName: LibWheel
+                patterns: '**/*.whl'
+                path: $(Build.SourcesDirectory)/dist
+              displayName: 'Download artifact from pipeline'
+            
+            - task: UsePythonVersion@0
+              inputs:
+                versionSpec: $(python-version)
+                addToPath: true
+                architecture: 'x64'
+              displayName: 'Set up Python 3'
+            
+            - task: PowerShell@2
+              inputs:
+                targetType: 'inline'
+                pwsh: true
+                script: |
+                  python3 -m pip install databricks-cli
+              displayName: 'Install Databricks CLI'
+            
+            - task: PowerShell@2
+              inputs:
+                targetType: 'inline'
+                pwsh: true
+                script: |
+                  $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
+                  databricks fs mkdirs dbfs:/FileStore/libraries
+                  databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
+              env:
+                DATABRICKS_HOST: $(test-databricks-host)
+                DATABRICKS_TOKEN: $(test-databricks-pat)
+              displayName: 'Publish wheel file to test workspace'
   
 - stage: DeployProd
   displayName: 'Deploy to production'
