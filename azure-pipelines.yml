@@ -132,6 +132,7 @@ stages:
     displayName: 'Deploy library to production'
     pool:
       vmImage: 'ubuntu-latest'
+    environment: 'Production-Databricks'
 
     steps:
       - task: DownloadPipelineArtifact@2
