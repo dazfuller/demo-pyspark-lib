@@ -129,7 +129,7 @@ stages:
 - stage: DeployProd
   displayName: 'Deploy to production'
   dependsOn: DeployTest
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  #condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - deployment: Deployment
     displayName: 'Deploy library to production'
