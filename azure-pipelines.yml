@@ -20,6 +20,18 @@ stages:
       vmImage: 'ubuntu-latest'
 
     steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            $branch = "$(Build.SourceBranch)" -replace "refs/heads/",""
+            git checkout "$branch"
+            git config user.email "build@dev.azure.com"
+            git config user.name "Azure DevOps"
+          pwsh: true
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Re-attach git to branch'
+      
       - task: UsePythonVersion@0
         inputs:
           versionSpec: $(python-version)
@@ -67,9 +79,35 @@ stages:
           targetType: inline
           pwsh: true
           script: |
-            ./set-version -BuildId $(Build.BuildId)
+            ./set-version -IsDevRelease -BuildId $(Build.BuildId)
             python setup.py bdist_wheel
-        displayName: 'Build the wheel file'
+        condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Build the test wheel file'
+
+      - task: PowerShell@2
+        inputs:
+          targetType: inline
+          pwsh: true
+          script: |
+            ./set-version
+            python setup.py bdist_wheel
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Build the production wheel file'
+
+      - task: PowerShell@2
+        inputs:
+          targetType: inline
+          pwsh: true
+          script: |
+            $versionMatch = Get-Content ./setup.py | Select-String -Pattern "version=`"(.+)`""
+            $version = $versionMatch.Matches.Groups[1].Value
+
+            git add .
+            git commit -m "update to version $version from pipeline [skip ci]"
+            git tag v$version
+            git push
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Commit version information back'
       
       - task: PublishPipelineArtifact@1
         inputs:
@@ -169,7 +207,7 @@ stages:
                 script: |
                   $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
                   databricks fs mkdirs dbfs:/FileStore/libraries
-                  databricks fs cp --overwrite $WheelFile.FullName dbfs:/FileStore/libraries/dazspark-py3.whl
+                  databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
               env:
                 DATABRICKS_HOST: $(test-databricks-host)
                 DATABRICKS_TOKEN: $(test-databricks-pat)
