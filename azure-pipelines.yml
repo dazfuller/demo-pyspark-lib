@@ -20,6 +20,17 @@ stages:
       vmImage: 'ubuntu-latest'
 
     steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            $branch = "$(Build.SourceBranch)" -replace "refs/heads/",""
+            git checkout "$branch"
+            git config user.email "build@dev.azure.com"
+            git config user.name "Azure DevOps"
+          pwsh: true
+        displayName: 'Re-attach git to branch'
+      
       - task: UsePythonVersion@0
         inputs:
           versionSpec: $(python-version)
@@ -69,7 +80,33 @@ stages:
           script: |
             ./set-version -IsDevRelease -BuildId $(Build.BuildId)
             python setup.py bdist_wheel
-        displayName: 'Build the wheel file'
+        condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Build the test wheel file'
+
+      - task: PowerShell@2
+        inputs:
+          targetType: inline
+          pwsh: true
+          script: |
+            ./set-version
+            python setup.py bdist_wheel
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Build the production wheel file'
+
+      - task: PowerShell@2
+        inputs:
+          targetType: inline
+          pwsh: true
+          script: |
+            $versionMatch = Get-Content ./setup.py | Select-String -Pattern "version=`"(.+)`""
+            $version = $versionMatch.Matches.Groups[1].Value
+
+            git add .
+            git commit -m "update to version $version from pipeline [skip ci]"
+            git tag v$version
+            git push
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Commit version information back'
       
       - task: PublishPipelineArtifact@1
         inputs:
@@ -129,7 +166,7 @@ stages:
 - stage: DeployProd
   displayName: 'Deploy to production'
   dependsOn: DeployTest
-  #condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - deployment: Deployment
     displayName: 'Deploy library to production'
@@ -140,16 +177,12 @@ stages:
       runOnce:
         deploy:
           steps:
-            - task: PowerShell@2
+            - task: DownloadPipelineArtifact@2
               inputs:
-                targetType: 'inline'
-                script: |
-                  $branch = "$(Build.SourceBranch)" -replace "refs/heads/",""
-                  git checkout "$branch"
-                  git config user.email "build@dev.azure.com"
-                  git config user.name "Azure DevOps"
-                pwsh: true
-              displayName: 'Re-attach git to branch'
+                artifactName: LibWheel
+                patterns: '**/*.whl'
+                path: $(Build.SourcesDirectory)/dist
+              displayName: 'Download artifact from pipeline'
             
             - task: UsePythonVersion@0
               inputs:
@@ -163,17 +196,8 @@ stages:
                 targetType: 'inline'
                 pwsh: true
                 script: |
-                  python3 -m pip install databricks-cli setuptools wheel
+                  python3 -m pip install databricks-cli
               displayName: 'Install Databricks CLI'
-
-            - task: PowerShell@2
-              inputs:
-                targetType: inline
-                pwsh: true
-                script: |
-                  ./set-version
-                  python setup.py bdist_wheel
-              displayName: 'Build the production wheel file'
             
             - task: PowerShell@2
               inputs:
@@ -187,13 +211,3 @@ stages:
                 DATABRICKS_HOST: $(test-databricks-host)
                 DATABRICKS_TOKEN: $(test-databricks-pat)
               displayName: 'Publish wheel file to production workspace'
-
-            - task: PowerShell@2
-              inputs:
-                targetType: inline
-                pwsh: true
-                script: |
-                  git add .
-                  git commit -m "update version information from pipeline [skip ci]"
-                  git push
-              displayName: 'Commit version information back'
