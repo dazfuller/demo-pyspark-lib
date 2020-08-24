@@ -67,7 +67,7 @@ stages:
           targetType: inline
           pwsh: true
           script: |
-            ./set-version -BuildId $(Build.BuildId)
+            ./set-version -IsDevRelease -BuildId $(Build.BuildId)
             python setup.py bdist_wheel
         displayName: 'Build the wheel file'
       
@@ -140,12 +140,16 @@ stages:
       runOnce:
         deploy:
           steps:
-            - task: DownloadPipelineArtifact@2
+            - task: PowerShell@2
               inputs:
-                artifactName: LibWheel
-                patterns: '**/*.whl'
-                path: $(Build.SourcesDirectory)/dist
-              displayName: 'Download artifact from pipeline'
+                targetType: 'inline'
+                script: |
+                  $branch = "$(Build.SourceBranch)" -replace "refs/heads/",""
+                  git checkout "$branch"
+                  git config user.email "build@dev.azure.com"
+                  git config user.name "Azure DevOps"
+                pwsh: true
+              displayName: 'Re-attach git to branch'
             
             - task: UsePythonVersion@0
               inputs:
@@ -159,8 +163,17 @@ stages:
                 targetType: 'inline'
                 pwsh: true
                 script: |
-                  python3 -m pip install databricks-cli
+                  python3 -m pip install databricks-cli setuptools wheel
               displayName: 'Install Databricks CLI'
+
+            - task: PowerShell@2
+              inputs:
+                targetType: inline
+                pwsh: true
+                script: |
+                  ./set-version
+                  python setup.py bdist_wheel
+              displayName: 'Build the production wheel file'
             
             - task: PowerShell@2
               inputs:
@@ -169,8 +182,18 @@ stages:
                 script: |
                   $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
                   databricks fs mkdirs dbfs:/FileStore/libraries
-                  databricks fs cp --overwrite $WheelFile.FullName dbfs:/FileStore/libraries/dazspark-py3.whl
+                  databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
               env:
                 DATABRICKS_HOST: $(test-databricks-host)
                 DATABRICKS_TOKEN: $(test-databricks-pat)
               displayName: 'Publish wheel file to production workspace'
+
+            - task: PowerShell@2
+              inputs:
+                targetType: inline
+                pwsh: true
+                script: |
+                  git add .
+                  git commit -m "update version information from pipeline [skip ci]"
+                  git push
+              displayName: 'Commit version information back'
