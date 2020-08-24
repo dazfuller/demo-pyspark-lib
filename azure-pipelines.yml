@@ -29,6 +29,7 @@ stages:
             git config user.email "build@dev.azure.com"
             git config user.name "Azure DevOps"
           pwsh: true
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Re-attach git to branch'
       
       - task: UsePythonVersion@0
