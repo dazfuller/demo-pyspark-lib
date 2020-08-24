@@ -26,8 +26,8 @@ stages:
           script: |
             $branch = "$(Build.SourceBranch)" -replace "refs/heads/",""
             git checkout "$branch"
-            git config user.email "build@dev.azure.com"
-            git config user.name "Azure DevOps"
+            git config --global user.email "daz.fuller@live.co.uk"
+            git config --global user.name "Darren Fuller"
           pwsh: true
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Re-attach git to branch'
