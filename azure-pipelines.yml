@@ -81,7 +81,7 @@ stages:
           script: |
             ./set-version -IsDevRelease -BuildId $(Build.BuildId)
             python setup.py bdist_wheel
-        condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Build the test wheel file'
 
       - task: PowerShell@2
@@ -91,7 +91,7 @@ stages:
           script: |
             ./set-version
             python setup.py bdist_wheel
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Build the production wheel file'
 
       - task: PowerShell@2
@@ -106,7 +106,7 @@ stages:
             git commit -m "update to version $version from pipeline [skip ci]"
             git tag v$version
             git push
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Commit version information back'
       
       - task: PublishPipelineArtifact@1
