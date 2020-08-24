@@ -1,6 +1,6 @@
 # Demo PySpark Library
 
-[![Build Status](https://dev.azure.com/dazfuller/Talks/_apis/build/status/dazfuller.demo-pyspark-lib?branchName=main)](https://dev.azure.com/dazfuller/Talks/_build/latest?definitionId=9&branchName=main)
+[![Build Status](https://dev.azure.com/dazfuller/Talks/_apis/build/status/demo-pyspark-lib?branchName=main)](https://dev.azure.com/dazfuller/Talks/_build/latest?definitionId=10&branchName=main)
 
 This is a demo python library to support talks around Big Data Engineering and DevOps.
 
