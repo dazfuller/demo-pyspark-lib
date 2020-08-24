@@ -87,21 +87,29 @@ stages:
         condition: and(succeeded(), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
         displayName: 'Build the test wheel file'
 
+      # For full releases build with the current version information
+      - task: PowerShell@2
+        inputs:
+          targetType: inline
+          pwsh: true
+          script: |
+            python setup.py bdist_wheel
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        displayName: 'Build the production wheel file'
+      
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'dist'
+          artifactName: LibWheel
+        displayName: 'Publish artifact to pipeline'
+
+      # For production releases, increment the version information only after the wheel has been created
       - task: PowerShell@2
         inputs:
           targetType: inline
           pwsh: true
           script: |
             ./set-version
-            python setup.py bdist_wheel
-        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        displayName: 'Build the production wheel file'
-
-      - task: PowerShell@2
-        inputs:
-          targetType: inline
-          pwsh: true
-          script: |
             $versionMatch = Get-Content ./setup.py | Select-String -Pattern "version=`"(.+)`""
             $version = $versionMatch.Matches.Groups[1].Value
 
@@ -110,13 +118,7 @@ stages:
             git tag v$version
             git push
         condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-        displayName: 'Commit version information back'
-      
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: 'dist'
-          artifactName: LibWheel
-        displayName: 'Publish artifact to pipeline'
+        displayName: 'Increment the library version and push the change'
 
 - stage: DeployTest
   displayName: 'Deploy to test'
@@ -161,7 +163,7 @@ stages:
                 script: |
                   $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
                   databricks fs mkdirs dbfs:/FileStore/libraries
-                  databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
+                  databricks fs cp --overwrite $WheelFile.FullName dbfs:/FileStore/libraries
               env:
                 DATABRICKS_HOST: $(test-databricks-host)
                 DATABRICKS_TOKEN: $(test-databricks-pat)
@@ -210,7 +212,7 @@ stages:
                 script: |
                   $WheelFile = Get-ChildItem -Path ./dist -Filter *.whl | Select-Object -First 1
                   databricks fs mkdirs dbfs:/FileStore/libraries
-                  databricks fs cp $WheelFile.FullName dbfs:/FileStore/libraries
+                  databricks fs cp --overwrite $WheelFile.FullName dbfs:/FileStore/libraries
               env:
                 DATABRICKS_HOST: $(test-databricks-host)
                 DATABRICKS_TOKEN: $(test-databricks-pat)
