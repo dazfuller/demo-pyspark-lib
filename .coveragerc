@@ -9,6 +9,12 @@ omit =
     ./.vscode/*
     # omit the unit tests from the coverage
     ./tests/*
+dynamic_context = test_function
+
+[report]
+fail_under = 90.0
+precision = 2
 
 [html]
 title = Demo Spark library coverage report
+show_contexts = true

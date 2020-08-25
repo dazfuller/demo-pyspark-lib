@@ -5,7 +5,7 @@ pyarrow==1.0.0
 flake8
 pep8-naming
 rope
-coverage
-unittest-xml-reporting
+coverage>=5.2.1
+unittest-xml-reporting>=3.0.4
 setuptools
 wheel
